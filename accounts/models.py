@@ -29,6 +29,8 @@ class Account(models.Model):
         (ACCOUNT_TYPE_LENDING, ACCOUNT_TYPE_LENDING)
     ], default="CURRENT")
 
+    closed = models.BooleanField(default=False)
+
     def increment_balance(self, value):
         Account.objects.filter(pk=self.pk).update(balance=F('balance')+value)
 
@@ -44,11 +46,11 @@ class Commitment(models.Model):
     TRANSACTION_TYPE_EXPENSE = "EXPENSE"
 
     amount = models.FloatField(default=0.0)
-    account = models.ForeignKey(Account, related_name="account", on_delete=models.CASCADE)
+    account = models.ForeignKey(Account, related_name="commitments", on_delete=models.CASCADE)
     description = models.CharField(max_length=256, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    category = models.ForeignKey(Category, related_name="category", on_delete=models.DO_NOTHING)
+    category = models.ForeignKey(Category, related_name="commitments", on_delete=models.DO_NOTHING)
     expectedDate = models.DateField()
     archived = models.BooleanField(default=False)
 
@@ -65,7 +67,7 @@ class Commitment(models.Model):
             self.original_value = self.original_value * -1
 
         if self.pk is None:
-            self.account.increment_commitment(self.original_value, self.transaction_type)
+            self.account.increment_commitment(self.original_value)
         else:
             existing = Transaction.objects.get(pk=self.pk)
             if existing.account_id != self.account_id:
@@ -85,12 +87,12 @@ class Transaction(models.Model):
     TRANSACTION_TYPE_EXPENSE = "EXPENSE"
 
     amount = models.FloatField(default=0.0)
-    account = models.ForeignKey(Account, related_name="transaction", on_delete=models.CASCADE)
+    account = models.ForeignKey(Account, related_name="transactions", on_delete=models.CASCADE)
     description = models.CharField(max_length=256, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    category = models.ForeignKey(Category, related_name="transaction", on_delete=models.SET_NULL, null=True)
-    commitment = models.ForeignKey(Commitment, related_name="transaction", on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey(Category, related_name="transactions", on_delete=models.SET_NULL, null=True)
+    commitment = models.ForeignKey(Commitment, related_name="transactions", on_delete=models.SET_NULL, null=True, blank=True)
     transaction_type = models.CharField(max_length=32, choices=[
         (TRANSACTION_TYPE_INCOME, TRANSACTION_TYPE_INCOME),
         (TRANSACTION_TYPE_EXPENSE, TRANSACTION_TYPE_EXPENSE)
@@ -104,7 +106,7 @@ class Transaction(models.Model):
             self.original_value = self.original_value * -1
 
         if self.pk is None:
-            self.account.increment_balance(self.original_value, self.transaction_type)
+            self.account.increment_balance(self.original_value)
         else:
             existing = Transaction.objects.get(pk=self.pk)
             if existing.account_id != self.account_id:
