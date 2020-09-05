@@ -41,7 +41,7 @@ class Account(models.Model):
         self.save(update_fields=["commitment"])
 
     def __str__(self):
-        return "{}, Current Balance: {}, Commitments: {}, Net Balance: ".format(
+        return "{}, Current Balance: {}, Commitments: {}, Net Balance: {}".format(
             self.name,
             self.balance,
             self.commitment,
