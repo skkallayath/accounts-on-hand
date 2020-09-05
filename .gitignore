@@ -67,6 +67,9 @@ docs/_build/
 # PyBuilder
 target/
 
+# PyBuilder
+.idea/
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -99,3 +102,4 @@ ENV/
 
 # mypy
 .mypy_cache/
+/.idea/accounts-on-hand.iml
