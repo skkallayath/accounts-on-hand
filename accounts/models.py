@@ -1,4 +1,3 @@
-from django.db.models import F
 from djongo import models
 
 
@@ -8,6 +7,8 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    objects = models.DjongoManager()
 
 
 class Account(models.Model):
@@ -32,13 +33,17 @@ class Account(models.Model):
     closed = models.BooleanField(default=False)
 
     def increment_balance(self, value):
-        Account.objects.filter(pk=self.pk).update(balance=F('balance')+value)
+        self.balance = self.balance + value
+        self.save(update_fields=["balance"])
 
     def increment_commitment(self, value):
-        Account.objects.filter(pk=self.pk).update(commitment=F('commitment')+value)
+        self.commitment=self.commitment + value
+        self.save(update_fields=["commitment"])
 
     def __str__(self):
         return "{}, Current Balance: {}, Commitments: {}".format(self.name, self.balance, self.commitment)
+
+    objects = models.DjongoManager()
 
 
 class Commitment(models.Model):
@@ -61,6 +66,8 @@ class Commitment(models.Model):
 
     original_value = models.FloatField(default=0)
 
+    objects = models.DjongoManager()
+
     def save(self, *args, **kwargs):
         self.original_value = self.amount
         if self.transaction_type == Transaction.TRANSACTION_TYPE_EXPENSE:
@@ -71,7 +78,7 @@ class Commitment(models.Model):
         else:
             existing = Transaction.objects.get(pk=self.pk)
             if existing.account_id != self.account_id:
-                existing.account.increment_balance(existing.amount * -1)
+                existing.account.increment_balance(existing.original_value)
                 self.account.increment_commitment(self.original_value)
             elif existing.original_value != self.original_value:
                 self.account.increment_commitment(self.original_value - existing.original_value)
@@ -80,6 +87,10 @@ class Commitment(models.Model):
 
     def __str__(self):
         return "Account: {}, Commitment: {}, {}".format(self.account, self.original_value, self.description)
+
+    def delete(self, *args, **kwargs):
+        self.account.increment_commitment(self.original_value * -1)
+        super(Transaction, self).delete(*args, **kwargs)
 
 
 class Transaction(models.Model):
@@ -100,6 +111,8 @@ class Transaction(models.Model):
 
     original_value = models.FloatField(default=0)
 
+    objects = models.DjongoManager()
+
     def save(self, *args, **kwargs):
         self.original_value = self.amount
         if self.transaction_type == Transaction.TRANSACTION_TYPE_EXPENSE:
@@ -110,7 +123,7 @@ class Transaction(models.Model):
         else:
             existing = Transaction.objects.get(pk=self.pk)
             if existing.account_id != self.account_id:
-                existing.account.increment_balance(existing.amount * -1)
+                existing.account.increment_balance(existing.original_value)
                 self.account.increment_balance(self.original_value)
             elif existing.original_value != self.original_value:
                 self.account.increment_balance(self.original_value - existing.original_value)
@@ -118,5 +131,9 @@ class Transaction(models.Model):
         super(Transaction, self).save(*args, **kwargs)
 
     def __str__(self):
-        return "Account: {}, Transaction: {}, {}".format(self.account, self.original_value, self.description)
+        return "Account: {}, Transaction Amount: {}".format(self.account.name, self.original_value)
+
+    def delete(self, *args, **kwargs):
+        self.account.increment_balance(self.original_value * -1)
+        super(Transaction, self).delete(*args, **kwargs)
 
