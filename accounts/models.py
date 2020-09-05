@@ -41,7 +41,12 @@ class Account(models.Model):
         self.save(update_fields=["commitment"])
 
     def __str__(self):
-        return "{}, Current Balance: {}, Commitments: {}".format(self.name, self.balance, self.commitment)
+        return "{}, Current Balance: {}, Commitments: {}, Net Balance: ".format(
+            self.name,
+            self.balance,
+            self.commitment,
+            self.balance - self.commitment
+        )
 
     objects = models.DjongoManager()
 
