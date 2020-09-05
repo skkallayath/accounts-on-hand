@@ -5,7 +5,7 @@ import sys
 
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'accounts_on_hand.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'accounts_on_hand.local_settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'accounts_on_hand.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'accounts_on_hand.local_settings')
 
 application = get_wsgi_application()

@@ -6,21 +6,37 @@ class Category(models.Model):
     name = models.CharField(max_length=128)
     description = models.CharField(max_length=4000, null=True, blank=True)
 
+    def __str__(self):
+        return self.name
+
 
 class Account(models.Model):
+    ACCOUNT_TYPE_SAVINGS = "SAVINGS"
+    ACCOUNT_TYPE_CURRENT = "CURRENT"
+    ACCOUNT_TYPE_LOAN = "LOAN"
+    ACCOUNT_TYPE_LENDING = "LENDING"
+
     name = models.CharField(max_length=128)
     description = models.CharField(max_length=4000, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now=True, auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     balance = models.FloatField(default=0.0)
     commitment = models.FloatField(default=0.0)
-    account_type = models.CharField(choices=[("SAVINGS", "SAVINGS"), ("CURRENT", "CURRENT")], default="CURRENT")
+    account_type = models.CharField(max_length=32, choices=[
+        (ACCOUNT_TYPE_SAVINGS, ACCOUNT_TYPE_SAVINGS),
+        (ACCOUNT_TYPE_CURRENT, ACCOUNT_TYPE_CURRENT),
+        (ACCOUNT_TYPE_LOAN, ACCOUNT_TYPE_LOAN),
+        (ACCOUNT_TYPE_LENDING, ACCOUNT_TYPE_LENDING)
+    ], default="CURRENT")
 
     def increment_balance(self, value):
         Account.objects.filter(pk=self.pk).update(balance=F('balance')+value)
 
     def increment_commitment(self, value):
         Account.objects.filter(pk=self.pk).update(commitment=F('commitment')+value)
+
+    def __str__(self):
+        return "{}, Current Balance: {}, Commitments: {}".format(self.name, self.balance, self.commitment)
 
 
 class Commitment(models.Model):
@@ -30,13 +46,13 @@ class Commitment(models.Model):
     amount = models.FloatField(default=0.0)
     account = models.ForeignKey(Account, related_name="account", on_delete=models.CASCADE)
     description = models.CharField(max_length=256, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now=True, auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     category = models.ForeignKey(Category, related_name="category", on_delete=models.DO_NOTHING)
     expectedDate = models.DateField()
     archived = models.BooleanField(default=False)
 
-    transaction_type = models.CharField(choices=[
+    transaction_type = models.CharField(max_length=32, choices=[
         (TRANSACTION_TYPE_INCOME, TRANSACTION_TYPE_INCOME),
         (TRANSACTION_TYPE_EXPENSE, TRANSACTION_TYPE_EXPENSE)
     ], )
@@ -60,6 +76,9 @@ class Commitment(models.Model):
 
         super(Commitment, self).save(*args, **kwargs)
 
+    def __str__(self):
+        return "Account: {}, Commitment: {}, {}".format(self.account, self.original_value, self.description)
+
 
 class Transaction(models.Model):
     TRANSACTION_TYPE_INCOME = "INCOME"
@@ -68,11 +87,11 @@ class Transaction(models.Model):
     amount = models.FloatField(default=0.0)
     account = models.ForeignKey(Account, related_name="transaction", on_delete=models.CASCADE)
     description = models.CharField(max_length=256, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now=True, auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     category = models.ForeignKey(Category, related_name="transaction", on_delete=models.SET_NULL, null=True)
     commitment = models.ForeignKey(Commitment, related_name="transaction", on_delete=models.SET_NULL, null=True)
-    transaction_type = models.CharField(choices=[
+    transaction_type = models.CharField(max_length=32, choices=[
         (TRANSACTION_TYPE_INCOME, TRANSACTION_TYPE_INCOME),
         (TRANSACTION_TYPE_EXPENSE, TRANSACTION_TYPE_EXPENSE)
     ],)
@@ -95,3 +114,7 @@ class Transaction(models.Model):
                 self.account.increment_balance(self.original_value - existing.original_value)
 
         super(Transaction, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return "Account: {}, Transaction: {}, {}".format(self.account, self.original_value, self.description)
+
